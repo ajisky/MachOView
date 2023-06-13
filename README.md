@@ -7,9 +7,9 @@
 Load Command增加`Symbol LC_DYLD_CHAINED_FIXUPS `和`LC_DYLD_EXPORTS_TRIE`和`LC_BUILD_VERSION` 的识别，方便查找内容
 
 
-![](https://github.com/ajisky/MachOView/blob/Branch_support_new_loadcommand/mdimg/1686629672946.jpg)
+![](https://github.com/ajisky/MachOView/blob/Branch_support_new_loadcommand/mdimg/1686629672946.png)
 
-[2.6.2dmg](https://github.com/ajisky/MachOView/blob/Branch_support_new_loadcommand/release/tag/2.6.2)
+[2.6.2dmg](https://github.com/ajisky/MachOView/blob/Branch_support_new_loadcommand/releases/tag/2.6.2)
 
 Engineering:  
 	Peter Saghelyi  
