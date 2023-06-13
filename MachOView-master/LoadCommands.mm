@@ -74,6 +74,12 @@ using namespace std;
     case LC_DYLIB_CODE_SIGN_DRS:  return @"LC_DYLIB_CODE_SIGN_DRS";
     case LC_LINKER_OPTION:        return @"LC_LINKER_OPTION";
     case LC_LINKER_OPTIMIZATION_HINT: return @"LC_LINKER_OPTIMIZATION_HINT";
+    case LC_VERSION_MIN_TVOS:     return @"LC_VERSION_MIN_TVOS";
+    case LC_VERSION_MIN_WATCHOS:  return @"LC_VERSION_MIN_WATCHOS";
+    case LC_NOTE:                 return @"LC_NOTE";
+    case LC_BUILD_VERSION:        return @"LC_BUILD_VERSION";
+    case LC_DYLD_EXPORTS_TRIE:    return @"LC_DYLD_EXPORTS_TRIE";
+    case LC_DYLD_CHAINED_FIXUPS:  return @"LC_DYLD_CHAINED_FIXUPS";
   }
 }
 
@@ -1951,7 +1957,65 @@ using namespace std;
     return node;
 }
 
-
+- (MVNode *)createBuildVersionCommandNode:(MVNode *)parent
+                              caption:(NSString *)caption
+                             location:(uint32_t)location
+               build_version_command:(struct build_version_command const *)build_version_command
+{
+    MVNodeSaver nodeSaver;
+    MVNode * node = [parent insertChildWithDetails:caption location:location length:build_version_command->cmdsize saver:nodeSaver];
+    NSRange range = NSMakeRange(location,0);
+    NSString * lastReadHex;
+    
+    [dataController read_uint32:range lastReadHex:&lastReadHex];
+    [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
+                           :lastReadHex
+                           :@"Command"
+                           :[self getNameForCommand:build_version_command->cmd]];
+    
+    [node.details setAttributes:MVCellColorAttributeName,[NSColor greenColor],nil];
+    
+    [dataController read_uint32:range lastReadHex:&lastReadHex];
+    [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
+                           :lastReadHex
+                           :@"Command Size"
+                           :[NSString stringWithFormat:@"%u", build_version_command->cmdsize]];
+    
+    [node.details setAttributes:MVCellColorAttributeName,[NSColor greenColor],
+     MVUnderlineAttributeName,@"YES",nil];
+    [dataController read_uint32:range lastReadHex:&lastReadHex];
+    [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
+                           :lastReadHex
+                           :@"Plateform"
+                           :[NSString stringWithFormat:@"%u",
+                             build_version_command->platform]];
+    [dataController read_uint32:range lastReadHex:&lastReadHex];
+    [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
+                           :lastReadHex
+                           :@"Minos"
+                           :[NSString stringWithFormat:@"%u.%u", build_version_command->minos>>16,(build_version_command->minos&0xff00)>>8]];
+    [dataController read_uint32:range lastReadHex:&lastReadHex];
+    [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
+                           :lastReadHex
+                           :@"Sdk"
+                           :[NSString stringWithFormat:@"%u.%u", build_version_command->sdk>>16,(build_version_command->sdk&0xff00)>>8]];
+    [dataController read_uint32:range lastReadHex:&lastReadHex];
+    [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
+                           :lastReadHex
+                           :@"Ntools"
+                           :[NSString stringWithFormat:@"%u", build_version_command->ntools]];
+    [dataController read_uint32:range lastReadHex:&lastReadHex];
+    [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
+                           :lastReadHex
+                           :@"Tool"
+                           :[NSString stringWithFormat:@"%u", build_version_command->tool]];
+    [dataController read_uint32:range lastReadHex:&lastReadHex];
+    [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
+                           :lastReadHex
+                           :@"Version"
+                           :[NSString stringWithFormat:@"%u.%u", build_version_command->version>>16,(build_version_command->version&0xff00)>>8]];
+    return node;
+}
 //-----------------------------------------------------------------------------
 - (MVNode *)createLCSourceVersionNode:(MVNode *)parent
                               caption:(NSString *)caption
@@ -2006,7 +2070,6 @@ using namespace std;
 
     return node;
 }
-
 //-----------------------------------------------------------------------------
 - (MVNode *)createLCLinkerOptionNode:(MVNode *)parent
                              caption:(NSString *)caption
@@ -2270,6 +2333,8 @@ using namespace std;
     case LC_FUNCTION_STARTS:
     case LC_DATA_IN_CODE:
     case LC_DYLIB_CODE_SIGN_DRS:
+    case LC_DYLD_EXPORTS_TRIE:
+    case LC_DYLD_CHAINED_FIXUPS:
     case LC_LINKER_OPTIMIZATION_HINT:
     {
       MATCH_STRUCT(linkedit_data_command,location)
@@ -2403,6 +2468,30 @@ using namespace std;
                                     caption:caption
                                    location:location
                       linker_option_command:linker_option_command];
+    } break;
+    case LC_VERSION_MIN_TVOS:
+    {
+
+    } break;
+    case LC_VERSION_MIN_WATCHOS:
+    {
+
+    } break;
+    case LC_NOTE:
+    {
+
+    } break;
+    case LC_BUILD_VERSION:
+    {
+        MATCH_STRUCT(build_version_command, location);
+        node = [self createBuildVersionCommandNode:parent
+                                       caption:caption
+                                      location:location
+                             build_version_command:build_version_command];
+    } break;
+    case LC_FILESET_ENTRY:
+    {
+
     } break;
     default:
       [self createDataNode:parent 
