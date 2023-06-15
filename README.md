@@ -7,7 +7,7 @@
 修复eh_frame FDE中存在LSDA时, 解析gcc_except_tab结构出错导致crash问题
 
 
-![](./mdimg/1686823009830.jpg)
+![](./mdimg/1686823009830.png)
 
 ## v2.6.2 更新内容
 
