@@ -2469,18 +2469,18 @@ using namespace std;
                                    location:location
                       linker_option_command:linker_option_command];
     } break;
-    case LC_VERSION_MIN_TVOS:
-    {
-
-    } break;
-    case LC_VERSION_MIN_WATCHOS:
-    {
-
-    } break;
-    case LC_NOTE:
-    {
-
-    } break;
+//    case LC_VERSION_MIN_TVOS:
+//    {
+//
+//    } break;
+//    case LC_VERSION_MIN_WATCHOS:
+//    {
+//
+//    } break;
+//    case LC_NOTE:
+//    {
+//
+//    } break;
     case LC_BUILD_VERSION:
     {
         MATCH_STRUCT(build_version_command, location);
@@ -2489,10 +2489,10 @@ using namespace std;
                                       location:location
                              build_version_command:build_version_command];
     } break;
-    case LC_FILESET_ENTRY:
-    {
-
-    } break;
+//    case LC_FILESET_ENTRY:
+//    {
+//
+//    } break;
     default:
       [self createDataNode:parent 
                    caption:[NSString stringWithFormat:@"%@ (unsupported)", caption]

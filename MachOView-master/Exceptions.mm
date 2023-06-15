@@ -541,7 +541,7 @@ using namespace std;
               
 {
   MVNodeSaver nodeSaver;
-  MVNode * node = [parent insertChildWithDetails:caption location:location length:length saver:nodeSaver]; 
+  MVNode * node = [parent insertChildWithDetails:caption location:location length:length saver:nodeSaver];
   
   NSRange range = NSMakeRange(location,0);
   NSString * lastReadHex;
@@ -586,7 +586,7 @@ using namespace std;
   [node.details setAttributes:MVUnderlineAttributeName,@"YES",nil];
   
   //==================== Call Sites Table ====================
-  NSAssert (callSiteFormat == DW_EH_PE_udata4, @"Not yet implemeted encoding for call-site format");
+  NSAssert (callSiteFormat != DW_EH_PE_sleb128, @"Not yet implemeted encoding for call-site format");
 
   set<uint64_t> actions;
 
@@ -615,16 +615,17 @@ using namespace std;
                            :lastReadHex
                            :@"action"
                            :[NSString stringWithFormat:@"%qu", action]];
-   
+    // action=0:cleanup: 用于清理操作，例如在异常抛出后释放资源等
+    // action=1:catch: 用于捕获异常并调用相应的异常处理代码
+    // action=3:terminate: 用于终止程序运行，并调用std::terminate函数
     if (action > 0)
     {
       actions.insert(action);
     }
     
     [node.details setAttributes:MVUnderlineAttributeName,@"YES",nil];
-
-  } while (NSMaxRange(range) - location < callSiteTableLength);
   
+  } while (range.location - location <= callSiteTableLength);
   //================== Action record table ================
   if (typeTableFormat != DW_EH_PE_omit)
   {
@@ -637,13 +638,13 @@ using namespace std;
     while (actions.empty() == false)
     {
       actions.erase (currentAction);
-      
+
       int64_t index = [dataController read_sleb128:range lastReadHex:&lastReadHex]; currentAction += range.length;
       [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                              :lastReadHex
                              :@"Type Filter"
                              :[NSString stringWithFormat:@"%qd", index]];
-      
+
       if (index > 0)
       {
         typeIndexes.insert(index);
@@ -652,18 +653,17 @@ using namespace std;
       {
         exceptionSpecs.insert(index);
       }
-    
       int64_t nextAction = [dataController read_sleb128:range lastReadHex:&lastReadHex]; currentAction += range.length;
       [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                              :lastReadHex
                              :@"Next Action"
                              :[NSString stringWithFormat:@"%qd", nextAction]];
-      
+
       if (nextAction >= currentAction)
       {
         actions.insert (nextAction);
       }
-    } 
+    }
 
     [node.details setAttributes:MVUnderlineAttributeName,@"YES",nil];
     
@@ -676,8 +676,8 @@ using namespace std;
       int32_t index = *iter;
 
       NSRange range = NSMakeRange(typeTableBaseLocation - index - 1, 0);
-      
-      // Negative value, starting at -1, which is the byte offset in the types table of a null-terminated list of type indexes. 
+
+      // Negative value, starting at -1, which is the byte offset in the types table of a null-terminated list of type indexes.
       // The list will be at TTBase+1 for -1, at TTBase+2 for -2, and so on.
       // Used by the runtime to match the type of the thrown exception with the types specified in the “throw” list.
       // note: they are SLEB128 entries
@@ -697,14 +697,14 @@ using namespace std;
     {
       int32_t index = *iter;
       NSParameterAssert (index > 0);
-      
-      // Positive value, starting at 1. Index in the types table of the __typeinfo for the catch-clause type. 
-      // 1 is the first word preceding TTBase, 2 is the second word, and so on. 
+
+      // Positive value, starting at 1. Index in the types table of the __typeinfo for the catch-clause type.
+      // 1 is the first word preceding TTBase, 2 is the second word, and so on.
       // Used by the runtime to check if the thrown exception type matches the catch-clause type.
-        
+
       uint32_t size = ENCODING_FIXSIZE(typeTableFormat);
       range = NSMakeRange(typeTableBaseLocation - index * size,0);
-        
+
       uint64_t typeInfo = READ_USE_ENCODING(typeTableFormat,range,lastReadHex);
       [node.details appendRow:[NSString stringWithFormat:@"%.8lX", range.location]
                               :lastReadHex
